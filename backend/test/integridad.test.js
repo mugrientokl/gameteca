@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const mongoose = require("mongoose");
 
+const Biblioteca = require("../models/Biblioteca");
 const Videojuego = require("../models/Videojuego");
 const Resena = require("../models/Resena");
 const videojuegoController = require("../controllers/videojuegoController");
@@ -55,6 +56,80 @@ test("el catálogo incluye documentos activos y heredados sin activo", async () 
     assert.deepEqual(res.body, []);
   } finally {
     Videojuego.find = originalFind;
+  }
+});
+
+test("el catálogo aplica los filtros recibidos", async () => {
+  const originalFind = Videojuego.find;
+  let filtroRecibido;
+
+  Videojuego.find = (filtro) => {
+    filtroRecibido = filtro;
+    return {
+      sort: () => ({
+        limit: async () => []
+      })
+    };
+  };
+
+  try {
+    const res = crearRespuesta();
+    await videojuegoController.obtenerVideojuegos({
+      query: {
+        titulo: "zelda",
+        genero: "Aventura",
+        plataforma: "PC"
+      }
+    }, res);
+
+    assert.deepEqual(filtroRecibido.activo, { $ne: false });
+    assert.deepEqual(filtroRecibido.titulo, { $regex: "zelda", $options: "i" });
+    assert.equal(filtroRecibido.generos, "Aventura");
+    assert.equal(filtroRecibido.plataformas, "PC");
+  } finally {
+    Videojuego.find = originalFind;
+  }
+});
+
+test("cambiar el progreso devuelve los videojuegos de la biblioteca poblados", async () => {
+  const originalFindOneAndUpdate = Biblioteca.findOneAndUpdate;
+  const videojuegoId = "507f1f77bcf86cd799439011";
+  const usuarioId = "507f1f77bcf86cd799439012";
+  const biblioteca = { juegos: [] };
+  let filtroRecibido;
+  let actualizacionRecibida;
+  let referenciaPoblada;
+
+  Biblioteca.findOneAndUpdate = (filtro, actualizacion) => {
+    filtroRecibido = filtro;
+    actualizacionRecibida = actualizacion;
+    return {
+      populate(referencia) {
+        referenciaPoblada = referencia;
+        return Promise.resolve(biblioteca);
+      }
+    };
+  };
+
+  try {
+    const res = crearRespuesta();
+    await bibliotecaController.cambiarEstado({
+      params: { usuarioId, videojuegoId },
+      body: { estado: "jugando" }
+    }, res);
+
+    assert.equal(filtroRecibido.usuarioId, usuarioId);
+    assert.equal(
+      filtroRecibido["juegos.videojuegoId"].toString(),
+      videojuegoId
+    );
+    assert.deepEqual(actualizacionRecibida, {
+      $set: { "juegos.$.estado": "jugando" }
+    });
+    assert.equal(referenciaPoblada, "juegos.videojuegoId");
+    assert.equal(res.body.biblioteca, biblioteca);
+  } finally {
+    Biblioteca.findOneAndUpdate = originalFindOneAndUpdate;
   }
 });
 

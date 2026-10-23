@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { api, ApiError } from "../src/services/api.js";
+import { filterCatalogGames } from "../src/services/catalog.js";
 
 test("el cliente HTTP usa endpoints, métodos, bodies y errores del backend", async () => {
   const originalFetch = globalThis.fetch;
@@ -59,4 +60,77 @@ test("el cliente HTTP usa endpoints, métodos, bodies y errores del backend", as
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("el cliente envía los filtros de catálogo como parámetros de búsqueda", async () => {
+  const originalFetch = globalThis.fetch;
+  let requestedUrl;
+  globalThis.fetch = async (url) => {
+    requestedUrl = String(url);
+    return new Response("[]", {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    });
+  };
+
+  try {
+    await api.games({
+      titulo: "The Legend",
+      genero: "Aventura",
+      plataforma: "PC"
+    });
+
+    const url = new URL(requestedUrl);
+    assert.equal(url.pathname, "/api/videojuegos");
+    assert.equal(url.searchParams.get("titulo"), "The Legend");
+    assert.equal(url.searchParams.get("genero"), "Aventura");
+    assert.equal(url.searchParams.get("plataforma"), "PC");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("el catálogo filtra por título, género y plataforma seleccionados", () => {
+  const games = [
+    {
+      titulo: "Terraria",
+      generos: ["Aventura", "Sandbox"],
+      plataformas: ["PC", "Xbox"]
+    },
+    {
+      titulo: "Minecraft",
+      generos: ["Sandbox"],
+      plataformas: ["PC", "PlayStation", "Xbox"]
+    },
+    {
+      titulo: "Fifa",
+      generos: ["Deportes"],
+      plataformas: ["PC", "PlayStation", "Xbox"]
+    }
+  ];
+
+  assert.deepEqual(
+    filterCatalogGames(games, {
+      titulo: "",
+      genero: "Aventura",
+      plataforma: ""
+    }).map((game) => game.titulo),
+    ["Terraria"]
+  );
+  assert.deepEqual(
+    filterCatalogGames(games, {
+      titulo: "terr",
+      genero: "Aventura",
+      plataforma: "PC"
+    }).map((game) => game.titulo),
+    ["Terraria"]
+  );
+  assert.deepEqual(
+    filterCatalogGames(games, {
+      titulo: "",
+      genero: "Aventura",
+      plataforma: "PlayStation"
+    }),
+    []
+  );
 });

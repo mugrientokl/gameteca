@@ -140,7 +140,7 @@ exports.agregarVideojuego = async (req, res) => {
         new: true,
         runValidators: true
       }
-    );
+    ).populate("juegos.videojuegoId");
 
     if (!biblioteca) {
       const existe = await Biblioteca.exists({ usuarioId });
@@ -196,7 +196,7 @@ exports.cambiarEstado = async (req, res) => {
         new: true,
         runValidators: true
       }
-    );
+    ).populate("juegos.videojuegoId");
 
     if (!biblioteca) {
       return res.status(404).json({
@@ -239,7 +239,7 @@ exports.quitarVideojuego = async (req, res) => {
         }
       },
       { new: true }
-    );
+    ).populate("juegos.videojuegoId");
 
     if (!biblioteca) {
       return res.status(404).json({

@@ -64,7 +64,8 @@ export const api = {
     Object.entries(params).forEach(([key, value]) => {
       if (value) query.set(key, value);
     });
-    const suffix = query.size ? `?${query}` : "";
+    const search = query.toString();
+    const suffix = search ? `?${search}` : "";
     return request(`/api/videojuegos${suffix}`);
   },
   game: (id) => request(`/api/videojuegos/${encodeURIComponent(id)}`),

@@ -2,17 +2,18 @@ import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../services/api";
+import { filterCatalogGames } from "../services/catalog";
 import { useAuth } from "../context/AuthContext";
 import GameCard from "../components/GameCard";
 import Notice from "../components/Notice";
 
 export default function CatalogPage() {
   const { token, user } = useAuth();
-  const [games, setGames] = useState([]);
   const [query, setQuery] = useState("");
   const [genre, setGenre] = useState("");
   const [platform, setPlatform] = useState("");
   const [filters, setFilters] = useState({});
+  const [catalogGames, setCatalogGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -22,25 +23,34 @@ export default function CatalogPage() {
     let active = true;
     setLoading(true);
     setError("");
-    api.games(filters)
-      .then((result) => { if (active) setGames(result); })
+    api.games()
+      .then((result) => {
+        if (active) {
+          setCatalogGames(result);
+        }
+      })
       .catch((err) => { if (active) setError(err.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [filters]);
+  }, []);
+
+  const filteredGames = useMemo(
+    () => filterCatalogGames(catalogGames, filters),
+    [catalogGames, filters]
+  );
 
   const genres = useMemo(
-    () => [...new Set(games.flatMap((game) => game.generos || []))].sort(),
-    [games]
+    () => [...new Set(catalogGames.flatMap((game) => game.generos || []))].sort(),
+    [catalogGames]
   );
   const platforms = useMemo(
-    () => [...new Set(games.flatMap((game) => game.plataformas || []))].sort(),
-    [games]
+    () => [...new Set(catalogGames.flatMap((game) => game.plataformas || []))].sort(),
+    [catalogGames]
   );
 
   const search = (event) => {
     event.preventDefault();
-    setFilters({ titulo: query.trim(), genero, plataforma: platform });
+    setFilters({ titulo: query.trim(), genero: genre, plataforma: platform });
   };
 
   const addGame = async (game) => {
@@ -85,7 +95,7 @@ export default function CatalogPage() {
         <div className="section-heading">
           <div>
             <span className="eyebrow">DESCUBRE TU PRÓXIMA AVENTURA</span>
-            <h2>Catálogo <span className="heading-count">{games.length}</span></h2>
+            <h2>Catálogo <span className="heading-count">{filteredGames.length}</span></h2>
           </div>
           <p>Filtra y encuentra el siguiente juego para tu colección.</p>
         </div>
@@ -116,9 +126,9 @@ export default function CatalogPage() {
         {error && <Notice type="error">{error}</Notice>}
         {loading ? (
           <div className="loading-state">Cargando juegos desde GameTeca…</div>
-        ) : games.length ? (
+        ) : filteredGames.length ? (
           <div className="game-grid">
-            {games.map((game) => (
+            {filteredGames.map((game) => (
               <GameCard
                 key={game._id}
                 game={game}
