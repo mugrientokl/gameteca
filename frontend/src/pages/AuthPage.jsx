@@ -35,7 +35,7 @@ export default function AuthPage({ mode }) {
         <span className="auth-orbit-label">PLAY · COLLECT · SHARE</span>
       </div>
       <section className="auth-card">
-        <Link className="back-link" to="/inicio"><ArrowLeft size={16} /> Volver al catálogo</Link>
+        <Link className="back-link" to="/catalogo"><ArrowLeft size={16} /> Volver al catálogo</Link>
         <span className="eyebrow">{registering ? "EMPIEZA TU AVENTURA" : "QUÉ BUENO VERTE"}</span>
         <h1>{registering ? "Crea tu cuenta" : "Bienvenido de vuelta"}</h1>
         <p className="auth-subtitle">{registering
@@ -79,6 +79,7 @@ export default function AuthPage({ mode }) {
             </div>
             {registering && <small>Usa entre 12 y 72 caracteres. La cuenta se crea como jugador.</small>}
           </label>
+          {!registering && <Link className="forgot-link" to="/recuperar">¿Olvidaste tu contraseña?</Link>}
           <button className="button button-primary button-wide" disabled={busy}>
             {busy ? "Procesando…" : registering ? "Crear cuenta" : "Iniciar sesión"}
           </button>

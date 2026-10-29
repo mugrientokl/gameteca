@@ -53,6 +53,15 @@ export function AuthProvider({ children }) {
       setUser(result.usuario);
       return result;
     },
+    async updateProfile(changes) {
+      const result = await api.updateProfile(changes, token);
+      if (result.token) {
+        localStorage.setItem("gameteca_token", result.token);
+        setToken(result.token);
+      }
+      setUser(result.usuario);
+      return result;
+    },
     logout() {
       localStorage.removeItem("gameteca_token");
       setToken(null);

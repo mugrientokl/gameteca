@@ -83,7 +83,7 @@ export default function LibraryPage() {
           <span className="empty-icon"><Gamepad2 size={26} /></span>
           <h2>Tu biblioteca está esperando aventuras</h2>
           <p>Explora el catálogo y agrega tus próximos juegos.</p>
-          <Link className="button button-primary" to="/inicio"><Search size={16} /> Explorar catálogo</Link>
+          <Link className="button button-primary" to="/catalogo"><Search size={16} /> Explorar catálogo</Link>
         </div>
       ) : (
         <div className="library-list">

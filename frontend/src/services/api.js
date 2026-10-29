@@ -26,11 +26,11 @@ export async function request(path, { token, body, headers, ...options } = {}) {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers: {
-        ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(body !== undefined && !(body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers
       },
-      ...(body !== undefined ? { body: JSON.stringify(body) } : {})
+      ...(body !== undefined ? { body: body instanceof FormData ? body : JSON.stringify(body) } : {})
     });
   } catch {
     throw new ApiError(
@@ -54,10 +54,15 @@ export async function request(path, { token, body, headers, ...options } = {}) {
   return payload;
 }
 
+export const imageUrl = (path) => (path ? `${API_URL}${path}` : "");
+
 export const api = {
   register: (body) => request("/api/auth/registro", { method: "POST", body }),
   login: (body) => request("/api/auth/login", { method: "POST", body }),
   profile: (token) => request("/api/auth/perfil", { token }),
+  updateProfile: (body, token) => request("/api/auth/perfil", { method: "PUT", body, token }),
+  forgotPassword: (correo) => request("/api/auth/olvide-password", { method: "POST", body: { correo } }),
+  resetPassword: (token, password) => request("/api/auth/restablecer-password", { method: "POST", body: { token, password } }),
 
   games: (params = {}) => {
     const query = new URLSearchParams();
@@ -68,6 +73,9 @@ export const api = {
     const suffix = search ? `?${search}` : "";
     return request(`/api/videojuegos${suffix}`);
   },
+  gamesPage: (params = {}) => api.games({ pagina: 1, ...params }),
+  topGames: () => request("/api/videojuegos/top"),
+  gameFilters: () => request("/api/videojuegos/filtros"),
   game: (id) => request(`/api/videojuegos/${encodeURIComponent(id)}`),
   createGame: (body, token) => request("/api/videojuegos", {
     method: "POST", body, token
@@ -81,6 +89,13 @@ export const api = {
     { method: "DELETE", token }
   ),
   inactiveGames: (token) => request("/api/videojuegos/inactivos", { token }),
+  uploadGameImage: (id, file, token) => {
+    const body = new FormData();
+    body.append("imagen", file);
+    return request(`/api/videojuegos/${encodeURIComponent(id)}/imagen`, {
+      method: "POST", body, token
+    });
+  },
   reactivateGame: (id, token) => request(
     `/api/videojuegos/${encodeURIComponent(id)}/reactivar`,
     { method: "PATCH", token }

@@ -1,11 +1,17 @@
 
+const fs = require("fs");
+const path = require("path");
 const mongoose = require("mongoose");
 const Videojuego = require("../models/Videojuego");
+const Biblioteca = require("../models/Biblioteca");
+
+const UPLOADS_DIR = path.join(__dirname, "..", "uploads");
 
 // CREAR VIDEOJUEGO
 exports.crearVideojuego = async (req, res) => {
   try {
-    const videojuego = await Videojuego.create(req.body);
+    const { imagen, ...datos } = req.body;
+    const videojuego = await Videojuego.create(datos);
 
     res.status(201).json({
       mensaje: "Videojuego registrado correctamente",
@@ -49,15 +55,134 @@ exports.obtenerVideojuegos = async (req, res) => {
       filtro.plataformas = plataforma;
     }
 
-    const videojuegos = await Videojuego.find(filtro)
-      .sort({ titulo: 1 })
-      .limit(100);
+    // Sin "pagina" se conserva la respuesta anterior (arreglo, máx. 100)
+    if (req.query.pagina === undefined) {
+      const videojuegos = await Videojuego.find(filtro)
+        .sort({ titulo: 1 })
+        .limit(100);
 
-    res.json(videojuegos);
+      return res.json(videojuegos);
+    }
+
+    const pagina = Math.max(parseInt(req.query.pagina, 10) || 1, 1);
+    const limite = Math.min(
+      Math.max(parseInt(req.query.limite, 10) || 12, 1),
+      50
+    );
+    const orden = ORDENES[req.query.orden] ? req.query.orden : "titulo";
+
+    const [resultado] = await Videojuego.aggregate([
+      { $match: filtro },
+      ...etapasEstadisticas(),
+      { $sort: ORDENES[orden] },
+      {
+        $facet: {
+          datos: [{ $skip: (pagina - 1) * limite }, { $limit: limite }],
+          total: [{ $count: "n" }]
+        }
+      }
+    ]);
+
+    const total = resultado.total[0]?.n || 0;
+
+    res.json({
+      videojuegos: resultado.datos,
+      total,
+      pagina,
+      paginas: Math.max(Math.ceil(total / limite), 1)
+    });
   } catch (error) {
     manejarError(error, res);
   }
 };
+
+// TOP 10 MEJOR VALORADOS
+exports.obtenerTop = async (req, res) => {
+  try {
+    const top = await Videojuego.aggregate([
+      { $match: { activo: { $ne: false } } },
+      ...etapasEstadisticas(),
+      { $match: { cantidad_resenas: { $gt: 0 } } },
+      { $sort: ORDENES.puntuacion },
+      { $limit: 10 }
+    ]);
+
+    res.json(top);
+  } catch (error) {
+    manejarError(error, res);
+  }
+};
+
+// GÉNEROS Y PLATAFORMAS DISPONIBLES PARA LOS FILTROS
+exports.obtenerFiltros = async (req, res) => {
+  try {
+    const base = { activo: { $ne: false } };
+    const [generos, plataformas] = await Promise.all([
+      Videojuego.distinct("generos", base),
+      Videojuego.distinct("plataformas", base)
+    ]);
+
+    res.json({ generos: generos.sort(), plataformas: plataformas.sort() });
+  } catch (error) {
+    manejarError(error, res);
+  }
+};
+
+const ORDENES = {
+  titulo: { titulo: 1 },
+  recientes: { fecha_registro: -1, _id: -1 },
+  antiguos: { fecha_registro: 1, _id: 1 },
+  puntuacion: { promedio: -1, cantidad_resenas: -1, titulo: 1 },
+  populares: { usuarios_biblioteca: -1, titulo: 1 }
+};
+
+// Agrega promedio, cantidad de reseñas y usuarios que lo tienen en su biblioteca
+function etapasEstadisticas() {
+  return [
+    {
+      $lookup: {
+        from: "resenas",
+        let: { id: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$videojuegoId", "$$id"] } } },
+          {
+            $group: {
+              _id: null,
+              promedio: { $avg: "$puntuacion" },
+              cantidad: { $sum: 1 }
+            }
+          }
+        ],
+        as: "_resenas"
+      }
+    },
+    {
+      $lookup: {
+        from: "bibliotecas",
+        let: { id: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $in: ["$$id", "$juegos.videojuegoId"] } } },
+          { $count: "n" }
+        ],
+        as: "_bibliotecas"
+      }
+    },
+    {
+      $addFields: {
+        promedio: {
+          $round: [{ $ifNull: [{ $arrayElemAt: ["$_resenas.promedio", 0] }, 0] }, 1]
+        },
+        cantidad_resenas: {
+          $ifNull: [{ $arrayElemAt: ["$_resenas.cantidad", 0] }, 0]
+        },
+        usuarios_biblioteca: {
+          $ifNull: [{ $arrayElemAt: ["$_bibliotecas.n", 0] }, 0]
+        }
+      }
+    },
+    { $project: { _resenas: 0, _bibliotecas: 0 } }
+  ];
+}
 
 // CONSULTAR VIDEOJUEGO POR ID
 exports.obtenerVideojuegoPorId = async (req, res) => {
@@ -77,11 +202,87 @@ exports.obtenerVideojuegoPorId = async (req, res) => {
       });
     }
 
-    res.json(videojuego);
+    const usuariosBiblioteca = await Biblioteca.countDocuments({
+      "juegos.videojuegoId": videojuego._id
+    });
+
+    res.json({
+      ...videojuego.toObject(),
+      usuarios_biblioteca: usuariosBiblioteca
+    });
   } catch (error) {
     manejarError(error, res);
   }
 };
+
+// SUBIR IMAGEN DEL VIDEOJUEGO
+exports.subirImagen = async (req, res) => {
+  try {
+    if (!mongoose.isObjectIdOrHexString(req.params.id)) {
+      return res.status(400).json({ mensaje: "ID inválido" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ mensaje: "Debe enviar una imagen" });
+    }
+
+    const extension = detectarExtension(req.file.buffer);
+
+    if (!extension) {
+      return res.status(400).json({
+        mensaje: "La imagen debe ser JPG, PNG o WEBP"
+      });
+    }
+
+    const videojuego = await Videojuego.findById(req.params.id);
+
+    if (!videojuego) {
+      return res.status(404).json({
+        mensaje: "Videojuego no encontrado"
+      });
+    }
+
+    const nombre = `${videojuego._id}-${Date.now()}.${extension}`;
+    await fs.promises.mkdir(UPLOADS_DIR, { recursive: true });
+    await fs.promises.writeFile(path.join(UPLOADS_DIR, nombre), req.file.buffer);
+
+    const anterior = videojuego.imagen;
+    videojuego.imagen = `/uploads/${nombre}`;
+    await videojuego.save();
+
+    if (anterior && anterior.startsWith("/uploads/")) {
+      fs.promises
+        .unlink(path.join(UPLOADS_DIR, path.basename(anterior)))
+        .catch(() => {});
+    }
+
+    res.json({
+      mensaje: "Imagen actualizada correctamente",
+      videojuego
+    });
+  } catch (error) {
+    manejarError(error, res);
+  }
+};
+
+// Valida el tipo real del archivo por su firma, no por el nombre enviado
+function detectarExtension(buffer) {
+  if (buffer.length > 12) {
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+      return "jpg";
+    }
+    if (buffer.subarray(0, 8).equals(
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    )) {
+      return "png";
+    }
+    if (buffer.toString("ascii", 0, 4) === "RIFF" &&
+        buffer.toString("ascii", 8, 12) === "WEBP") {
+      return "webp";
+    }
+  }
+  return null;
+}
 
 // LISTAR VIDEOJUEGOS INACTIVOS (ADMINISTRACIÓN)
 exports.obtenerVideojuegosInactivos = async (req, res) => {

@@ -1,6 +1,7 @@
 
 require("dotenv").config();
 
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -21,6 +22,12 @@ app.use(helmet());
 app.use(cors({
   origin: "http://localhost:5173"
 }));
+
+// Imágenes subidas por el admin; se permite cargarlas desde el frontend (otro origen)
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(path.join(__dirname, "uploads"), { index: false }));
 
 app.use(express.json({ limit: "100kb" }));
 

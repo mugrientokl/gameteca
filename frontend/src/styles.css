@@ -312,3 +312,71 @@ input, select, textarea { color: #f4f3fa; }
   .review-heading { flex-direction: column; }
   .site-footer { align-items: flex-start; flex-direction: column; gap: 8px; }
 }
+
+.game-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.admin-image-preview { max-width: 160px; max-height: 110px; border-radius: 10px; object-fit: cover; margin-bottom: 8px; }
+
+/* ---- Tema sobrio: un solo tono sólido por componente, sin degradados ni brillos ---- */
+:root {
+  background: #15171c;
+  --bg: #15171c;
+  --panel: #1d2027;
+  --panel-raised: #242831;
+  --line: rgba(255, 255, 255, .10);
+  --muted: #9aa0ad;
+  --purple: #4f8cff;
+  --purple-bright: #6fa3ff;
+}
+body, .app-shell { background: #15171c; }
+::selection { background: rgba(79, 140, 255, .4); }
+.topbar { background: #1a1d23; backdrop-filter: none; }
+.brand-mark { background: #2a3550; border-color: transparent; color: #8db4ff; }
+.main-nav > a.active { text-shadow: none; }
+.button-primary { background: #3d7bf0; box-shadow: none; }
+.button-primary:hover:not(:disabled) { background: #5189f2; box-shadow: none; }
+.button-secondary { background: #262a33; }
+.eyebrow { color: #7fa8f5; }
+.hero { background: #1a1d23; min-height: 380px; }
+.hero-content { padding: 80px 28px 76px; }
+.hero h1 span { color: #6fa3ff; background: none; -webkit-background-clip: border-box; background-clip: border-box; }
+.hero-glow, .hero-decoration { display: none; }
+.game-card, .panel { background: #1d2027; box-shadow: none; }
+.game-card:hover { border-color: rgba(111, 163, 255, .45); box-shadow: none; }
+.game-art, .game-card:nth-child(3n + 2) .game-art, .game-card:nth-child(3n) .game-art { background: #262b38; color: #8db4ff; }
+.game-art > svg, .detail-art > svg { filter: none; }
+.art-orbit { display: none; }
+.detail-art { background: #262b38; color: #8db4ff; border-color: var(--line); }
+.auth-decoration { background: #1d2027; }
+.auth-orb { background: #2a3550; border-color: transparent; color: #8db4ff; }
+.review-avatar { background: #2a3550; color: #8db4ff; }
+.filter-bar { background: #1d2027; }
+.filter-bar > select { background: #15171c; }
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus, .progress-select select:focus { border-color: #4f8cff; box-shadow: none; }
+
+.game-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.filter-bar > select { min-width: 150px; }
+.ranked-wrap { position: relative; }
+.rank-badge { position: absolute; top: 10px; left: 10px; z-index: 3; min-width: 34px; padding: 4px 9px; border-radius: 8px; background: #3d7bf0; color: #fff; font: 700 13px var(--font-display); text-align: center; }
+.chip-rating { color: #f2c14e; }
+.chip svg { vertical-align: -1px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 36px; color: var(--muted); font-size: 13px; }
+.pagination b { color: #fff; }
+.text-link { display: inline-flex; align-items: center; gap: 5px; color: #7fa8f5; font-weight: 600; }
+.text-link:hover { text-decoration: underline; }
+
+.user-menu { position: relative; }
+.user-menu-button { max-width: 220px; }
+.user-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.user-menu-list { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; min-width: 190px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #1d2027; display: grid; gap: 2px; }
+.user-menu-list button { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 0; border-radius: 7px; background: transparent; color: #dedde8; font-size: 13px; text-align: left; }
+.user-menu-list button:hover { background: #2a2f3a; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: rgba(0, 0, 0, .6); overflow-y: auto; }
+.modal { width: min(460px, 100%); padding: 26px; }
+.modal-heading { display: flex; justify-content: space-between; align-items: start; margin-bottom: 18px; }
+.modal-heading h2 { margin: 6px 0 0; font: 700 24px var(--font-display); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.password-fieldset { display: grid; gap: 14px; margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; }
+.password-fieldset legend { padding: 0 6px; color: #ceceda; font-size: 12px; font-weight: 600; }
+.forgot-link { justify-self: end; color: #7fa8f5; font-size: 12px; font-weight: 600; }
+.forgot-link:hover { text-decoration: underline; }
+.auth-single { display: flex; justify-content: center; }

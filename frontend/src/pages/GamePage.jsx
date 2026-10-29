@@ -1,9 +1,9 @@
-import { ArrowLeft, Gamepad2, Plus, Star } from "lucide-react";
+import { ArrowLeft, Gamepad2, Plus, Star, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Notice from "../components/Notice";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../services/api";
+import { api, imageUrl } from "../services/api";
 
 const emptyForm = { puntuacion: "5", comentario: "" };
 
@@ -114,20 +114,20 @@ export default function GamePage() {
   if (loading) return <main className="page-shell"><div className="loading-state">Cargando videojuego…</div></main>;
   if (error) return (
     <main className="page-shell content-page">
-      <Link className="back-link" to="/inicio"><ArrowLeft size={16} /> Volver al catálogo</Link>
+      <Link className="back-link" to="/catalogo"><ArrowLeft size={16} /> Volver al catálogo</Link>
       <Notice type="error">{error}</Notice>
     </main>
   );
 
   return (
     <main className="page-shell content-page">
-      <Link className="back-link" to="/inicio"><ArrowLeft size={16} /> Volver al catálogo</Link>
+      <Link className="back-link" to="/catalogo"><ArrowLeft size={16} /> Volver al catálogo</Link>
       {notice && <Notice type={notice.includes("correctamente") || notice.includes("agregó") ? "success" : "error"} onClose={() => setNotice("")}>{notice}</Notice>}
       <section className="detail-hero">
         <div className="detail-art">
-          <div className="art-orbit" />
-          <Gamepad2 size={76} strokeWidth={1.1} />
-          <span>GAMETECA · GAME PROFILE</span>
+          {game.imagen
+            ? <img className="game-cover" src={imageUrl(game.imagen)} alt={game.titulo} />
+            : <><div className="art-orbit" /><Gamepad2 size={76} strokeWidth={1.1} /><span>GAMETECA · GAME PROFILE</span></>}
         </div>
         <div className="detail-copy">
           <span className="eyebrow">FICHA DEL VIDEOJUEGO</span>
@@ -136,6 +136,7 @@ export default function GamePage() {
           <p className="detail-platforms">{(game.plataformas || []).join(" · ")}</p>
           <div className="detail-stats">
             <div><span className="stat-label">Promedio</span><strong>{reviewData?.promedio ?? "—"} <Star size={15} fill="currentColor" /></strong></div>
+            <div><span className="stat-label">En bibliotecas</span><strong>{game.usuarios_biblioteca ?? 0} <Users size={15} /></strong></div>
             <div><span className="stat-label">Reseñas</span><strong>{reviewData?.cantidad ?? 0}</strong></div>
             <div><span className="stat-label">Edad recomendada</span><strong>{game.caracteristicas?.rango_edad || "—"}</strong></div>
           </div>

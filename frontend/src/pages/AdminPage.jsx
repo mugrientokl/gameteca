@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import GameCard from "../components/GameCard";
 import Notice from "../components/Notice";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../services/api";
+import { api, imageUrl } from "../services/api";
 
 const blankForm = {
   titulo: "",
@@ -45,6 +45,8 @@ export default function AdminPage() {
   const [form, setForm] = useState(blankForm);
   const [editingId, setEditingId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [currentImage, setCurrentImage] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -68,6 +70,8 @@ export default function AdminPage() {
   const resetForm = () => {
     setForm(blankForm);
     setEditingId("");
+    setImageFile(null);
+    setCurrentImage("");
   };
 
   const submit = async (event) => {
@@ -81,9 +85,19 @@ export default function AdminPage() {
       }
       if (editingId) {
         await api.updateGame(editingId, payload, token);
+        if (imageFile) await api.uploadGameImage(editingId, imageFile, token);
         setNotice("El videojuego se actualizó correctamente.");
       } else {
-        await api.createGame(payload, token);
+        const created = await api.createGame(payload, token);
+        if (imageFile) {
+          try {
+            await api.uploadGameImage(created.videojuego._id, imageFile, token);
+          } catch (err) {
+            resetForm();
+            await refresh();
+            throw new Error(`El videojuego se creó, pero la imagen no se pudo subir: ${err.message}`);
+          }
+        }
         setNotice("El videojuego se creó correctamente.");
       }
       resetForm();
@@ -98,6 +112,8 @@ export default function AdminPage() {
   const editGame = (game) => {
     setForm(toForm(game));
     setEditingId(game._id);
+    setImageFile(null);
+    setCurrentImage(game.imagen || "");
     setTab(game.activo === false ? "inactive" : "active");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -162,6 +178,10 @@ export default function AdminPage() {
           </label>
           <label className="form-field"><span>Rango de edad</span>
             <input value={form.rango_edad} onChange={(event) => setForm({ ...form, rango_edad: event.target.value })} placeholder="Ej. T / 13+" />
+          </label>
+          <label className="form-field"><span>Imagen <small>opcional · JPG, PNG o WEBP, máx. 2 MB</small></span>
+            {currentImage && !imageFile && <img className="admin-image-preview" src={imageUrl(currentImage)} alt="Imagen actual" />}
+            <input key={imageFile ? "has-file" : "no-file"} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setImageFile(event.target.files?.[0] || null)} />
           </label>
           <div className="admin-checks">
             <label className="check-field"><input type="checkbox" checked={form.multijugador} onChange={(event) => setForm({ ...form, multijugador: event.target.checked })} /> Multijugador</label>

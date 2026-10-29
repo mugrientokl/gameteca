@@ -159,6 +159,9 @@ El script solicita nombre, correo y contraseña de manera interactiva. **No incl
 | `POST` | `/api/auth/registro` | Registrar jugador |
 | `POST` | `/api/auth/login` | Iniciar sesión |
 | `GET` | `/api/auth/perfil` | Consultar perfil autenticado |
+| `PUT` | `/api/auth/perfil` | Editar nombre y/o contraseña (requiere `passwordActual`) |
+| `POST` | `/api/auth/olvide-password` | Solicitar enlace de recuperación (se muestra en la consola del backend) |
+| `POST` | `/api/auth/restablecer-password` | Definir nueva contraseña con el token del enlace |
 | `GET` | `/api/videojuegos` | Listar y filtrar videojuegos activos |
 | `GET` | `/api/videojuegos/:id` | Consultar videojuego activo |
 | `POST` | `/api/videojuegos` | Crear videojuego (admin) |
@@ -217,9 +220,6 @@ Ejemplo recomendado de `.gitignore` en la raíz:
 mongodb-win32-x86_64-windows-*/data/
 ```
 
-## 📌 Estado del proyecto
-
-Los módulos principales del backend y frontend están implementados. Antes de la presentación final se recomienda validar de extremo a extremo la aplicación, incluida la eliminación lógica, la reactivación y la persistencia de datos tras reiniciar los servicios.
 
 ---
 

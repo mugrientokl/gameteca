@@ -32,6 +32,20 @@ const usuarioSchema = new mongoose.Schema({
     default: "jugador"
   },
 
+  passwordChangedAt: {
+    type: Date
+  },
+
+  resetTokenHash: {
+    type: String,
+    select: false
+  },
+
+  resetTokenExpira: {
+    type: Date,
+    select: false
+  },
+
   fecha_registro: {
     type: Date,
     default: Date.now

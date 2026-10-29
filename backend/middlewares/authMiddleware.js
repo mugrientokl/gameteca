@@ -29,6 +29,14 @@ exports.proteger = async (req, res, next) => {
       });
     }
 
+    // Las sesiones emitidas antes de un cambio de contraseña dejan de ser válidas
+    if (usuario.passwordChangedAt &&
+        datos.iat < Math.floor(usuario.passwordChangedAt.getTime() / 1000)) {
+      return res.status(401).json({
+        mensaje: "La sesión expiró. Inicia sesión de nuevo"
+      });
+    }
+
     req.usuario = {
       id: usuario._id.toString(),
       nombre: usuario.nombre,

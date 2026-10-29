@@ -48,6 +48,12 @@ const videojuegoSchema = new mongoose.Schema({
     }
   },
 
+  imagen: {
+    type: String,
+    trim: true,
+    default: ""
+  },
+
   fecha_registro: {
     type: Date,
     default: Date.now
